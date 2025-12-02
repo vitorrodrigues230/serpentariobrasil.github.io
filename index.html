@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serpentário Brasil - Guia de Espécies</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+        /* Esconde a barra de rolagem (estética) */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animação suave para os Modais */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        /* --- NOVA ANIMAÇÃO PARA AS IMAGENS DO CARROSSEL --- */
+        /* Quando a imagem entra */
+        .fade-imagem-enter-active {
+            transition: all 0.5s ease;
+        }
+        /* Quando a imagem sai */
+        .fade-imagem-leave-active {
+            transition: all 0.2s ease;
+            position: absolute; /* Importante para não pular o layout */
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        /* Estados iniciais e finais */
+        .fade-imagem-enter-from { opacity: 0; transform: scale(0.95); }
+        .fade-imagem-leave-to { opacity: 0; transform: scale(1.05); }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .btn-emergencia { animation: pulse-red 2s infinite; }
+
+        /* Animação da Seta-Cobra */
+        .cobra-seta:hover path { animation: rastejar 1s infinite linear; }
+        @keyframes rastejar {
+            0% { stroke-dashoffset: 24; }
+            100% { stroke-dashoffset: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        
+        <nav class="bg-green-800 text-green-100 p-4 sticky top-0 z-40 shadow-md">
+            <div class="container mx-auto flex flex-wrap justify-between items-center">
+                <div class="font-bold text-xl flex items-center gap-2">
+                    🐍 <span>Serpentário</span>
+                </div>
+                <ul class="flex space-x-4 md:space-x-8 text-sm md:text-base font-semibold mt-2 md:mt-0">
+                    <li><a href="#" class="hover:text-white transition">Início</a></li>
+                    <li><a href="#peconhentas" class="hover:text-white transition">Peçonhentas</a></li>
+                    <li><a href="#nao-peconhentas" class="hover:text-white transition">Não Peçonhentas</a></li>
+                    <li><a href="#contato" class="hover:text-white transition">Relatar</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <header class="bg-green-900 text-white p-8 shadow-lg relative">
+            <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="text-center md:text-left">
+                    <h1 class="text-4xl font-bold mb-2">Serpentário Brasil</h1>
+                    <p class="text-green-200">Guia de identificação e preservação</p>
+                </div>
+                <div class="w-full md:w-1/3 relative">
+                    <input type="text" v-model="termoPesquisa" placeholder="🔍 Pesquisar espécie..." 
+                           class="w-full p-3 rounded-lg text-gray-800 focus:outline-none focus:ring-4 focus:ring-green-500 shadow-inner">
+                </div>
+                <button @click="modalEmergencia = true" class="btn-emergencia bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full flex items-center shadow-lg transition transform hover:scale-105 whitespace-nowrap">
+                    <span class="text-2xl mr-2">🆘</span> EMERGÊNCIA
+                </button>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-6 overflow-hidden">
+
+            <div v-if="peconhentas.length === 0 && naoPeconhentas.length === 0" class="text-center text-gray-500 mt-10">
+                <p class="text-2xl">😕 Nenhuma cobra encontrada.</p>
+            </div>
+
+            <section id="peconhentas" class="mb-12 scroll-mt-24 relative" v-if="peconhentas.length > 0">
+                <h2 class="text-3xl font-bold text-red-800 border-b-4 border-red-800 inline-block mb-6">
+                    ⚠️ Serpentes Peçonhentas
+                </h2>
+                
+                <div class="relative group">
+                    <button @click="rolarCarrossel('lista-peconhentas', 'esquerda')" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 hover:bg-green-100 p-2 rounded-full shadow-lg border-2 border-green-800 transition transform hover:scale-110 hidden md:block">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-900 transform rotate-180 cobra-seta">
+                            <path d="M2 12c2-2 5-2 7 0s5 2 7 0 5-2 7 0" /><path d="M19 8l4 4-4 4" />
+                        </svg>
+                    </button>
+
+                    <div id="lista-peconhentas" class="flex overflow-x-auto space-x-6 p-4 snap-x snap-mandatory scrollbar-hide scroll-smooth">
+                        <div v-for="cobra in peconhentas" :key="cobra.id" 
+                             class="flex-shrink-0 w-80 snap-start bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition duration-300 border-t-4 border-red-800"
+                             @click="abrirModal(cobra)">
+                            <img :src="cobra.imagens[0]" :alt="cobra.nome" class="w-full h-48 object-cover">
+                            <div class="p-4">
+                                <h3 class="text-xl font-bold text-gray-800">{{ cobra.nome }}</h3>
+                                <p class="text-sm text-gray-500 italic">{{ cobra.cientifico }}</p>
+                                <p class="mt-2 text-gray-600 text-sm">Clique para ver detalhes...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button @click="rolarCarrossel('lista-peconhentas', 'direita')" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 hover:bg-green-100 p-2 rounded-full shadow-lg border-2 border-green-800 transition transform hover:scale-110 hidden md:block">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-900 cobra-seta">
+                            <path d="M2 12c2-2 5-2 7 0s5 2 7 0 5-2 7 0" /><path d="M19 8l4 4-4 4" />
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <section id="nao-peconhentas" class="mb-16 scroll-mt-24 relative" v-if="naoPeconhentas.length > 0">
+                <h2 class="text-3xl font-bold text-green-700 border-b-4 border-green-700 inline-block mb-6">
+                    🍃 Serpentes Não Peçonhentas
+                </h2>
+
+                <div class="relative group">
+                    <button @click="rolarCarrossel('lista-nao-peconhentas', 'esquerda')" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 hover:bg-green-100 p-2 rounded-full shadow-lg border-2 border-green-800 transition transform hover:scale-110 hidden md:block">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-900 transform rotate-180 cobra-seta">
+                            <path d="M2 12c2-2 5-2 7 0s5 2 7 0 5-2 7 0" /><path d="M19 8l4 4-4 4" />
+                        </svg>
+                    </button>
+
+                    <div id="lista-nao-peconhentas" class="flex overflow-x-auto space-x-6 p-4 snap-x snap-mandatory scrollbar-hide scroll-smooth">
+                        <div v-for="cobra in naoPeconhentas" :key="cobra.id" 
+                             class="flex-shrink-0 w-80 snap-start bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition duration-300 border-t-4 border-green-600"
+                             @click="abrirModal(cobra)">
+                            <img :src="cobra.imagens[0]" :alt="cobra.nome" class="w-full h-48 object-cover">
+                            <div class="p-4">
+                                <h3 class="text-xl font-bold text-gray-800">{{ cobra.nome }}</h3>
+                                <p class="text-sm text-gray-500 italic">{{ cobra.cientifico }}</p>
+                                <p class="mt-2 text-gray-600 text-sm">Clique para ver detalhes...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button @click="rolarCarrossel('lista-nao-peconhentas', 'direita')" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 hover:bg-green-100 p-2 rounded-full shadow-lg border-2 border-green-800 transition transform hover:scale-110 hidden md:block">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-900 cobra-seta">
+                            <path d="M2 12c2-2 5-2 7 0s5 2 7 0 5-2 7 0" /><path d="M19 8l4 4-4 4" />
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <section id="contato" class="bg-white rounded-xl shadow-xl p-8 max-w-4xl mx-auto border-t-8 border-green-600 scroll-mt-24">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800">📸 Relatar Avistamento</h2>
+                    <p class="text-gray-600 mt-2">Viu uma cobra na natureza? Preencha o formulário e ajude no mapeamento.</p>
+                </div>
+                <form @submit.prevent="enviarFormulario" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label class="block text-gray-700 font-bold mb-2">Seu Nome</label><input type="text" v-model="form.nome" required class="w-full p-3 border border-gray-300 rounded focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition"></div>
+                        <div><label class="block text-gray-700 font-bold mb-2">Seu E-mail</label><input type="email" v-model="form.email" required class="w-full p-3 border border-gray-300 rounded focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition"></div>
+                    </div>
+                    <div><label class="block text-gray-700 font-bold mb-2">Cidade/Estado</label><input type="text" v-model="form.local" required placeholder="Ex: Campinas - SP" class="w-full p-3 border border-gray-300 rounded focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition"></div>
+                    <div><label class="block text-gray-700 font-bold mb-2">Relato</label><textarea v-model="form.relato" rows="4" required placeholder="Descreva..." class="w-full p-3 border border-gray-300 rounded focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition"></textarea></div>
+                    <button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-lg shadow-md transition transform hover:scale-[1.01]">🚀 Enviar Relato</button>
+                </form>
+                <div v-if="mensagemSucesso" class="mt-6 p-4 bg-green-100 text-green-800 rounded border border-green-300 text-center animate-bounce">✅ Obrigado, <strong>{{ form.nome }}</strong>! Seu relato foi registrado com sucesso.</div>
+            </section>
+
+        </main>
+
+        <footer class="bg-gray-800 text-gray-400 text-center p-6 mt-10">
+            <p>&copy; 2023 Serpentário Brasil - Projeto Educativo</p>
+        </footer>
+
+        <transition name="fade">
+            <div v-if="modalAberto" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" @click.self="fecharModal">
+                <div class="bg-white rounded-lg max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+                    <button @click="fecharModal" class="absolute top-2 right-4 text-gray-600 z-10 text-3xl hover:text-red-600 font-bold">&times;</button>
+                    
+                    <div class="md:w-1/2 h-72 md:h-auto relative bg-gray-200 flex items-center justify-center group overflow-hidden">
+                        
+                        <transition name="fade-imagem">
+                            <img :key="indiceImagemAtual" 
+                                 :src="selecionada.imagens[indiceImagemAtual]" 
+                                 class="w-full h-full object-cover absolute top-0 left-0">
+                        </transition>
+
+                        <button v-if="selecionada.imagens.length > 1" @click.stop="imagemAnterior" class="absolute left-2 z-20 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 opacity-0 group-hover:opacity-100 transition">❮</button>
+                        <button v-if="selecionada.imagens.length > 1" @click.stop="proximaImagem" class="absolute right-2 z-20 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 opacity-0 group-hover:opacity-100 transition">❯</button>
+                        
+                        <div class="absolute bottom-4 z-20 flex space-x-2" v-if="selecionada.imagens.length > 1">
+                            <span v-for="(img, index) in selecionada.imagens" :key="index" class="block w-3 h-3 rounded-full transition" :class="index === indiceImagemAtual ? 'bg-white scale-125' : 'bg-white bg-opacity-50'"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="md:w-1/2 p-8 flex flex-col justify-center">
+                        <h2 class="text-3xl font-bold mb-1 text-gray-800">{{ selecionada.nome }}</h2>
+                        <p class="text-md text-gray-500 italic mb-4">{{ selecionada.cientifico }}</p>
+                        <div class="space-y-3">
+                            <p class="text-gray-700 leading-relaxed">{{ selecionada.descricao }}</p>
+                            <div class="bg-gray-100 p-4 rounded-md mt-4">
+                                <p><strong>🌍 Habitat:</strong> {{ selecionada.habitat }}</p>
+                                <p><strong>⚠️ Risco:</strong> <span :class="selecionada.risco === 'Baixo' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'">{{ selecionada.risco }}</span></p>
+                                <p><strong>💉 Tipo:</strong> {{ selecionada.tipo === 'peconhenta' ? 'Peçonhenta' : 'Não Peçonhenta' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <transition name="fade">
+            <div v-if="modalEmergencia" class="fixed inset-0 bg-red-900 bg-opacity-90 flex items-center justify-center z-50 p-4" @click.self="modalEmergencia = false">
+                <div class="bg-white rounded-lg max-w-2xl w-full p-8 shadow-2xl relative border-4 border-red-600">
+                    <button @click="modalEmergencia = false" class="absolute top-2 right-4 text-gray-500 text-4xl hover:text-red-600 font-bold">&times;</button>
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-2">🚑</div>
+                        <h2 class="text-3xl font-bold text-red-700 uppercase">Protocolo de Acidente</h2>
+                        <p class="text-gray-600">Siga estes passos imediatamente.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-green-50 p-4 rounded border-l-4 border-green-500">
+                            <h3 class="font-bold text-green-800 text-lg mb-2">✅ O QUE FAZER</h3>
+                            <ul class="list-disc list-inside text-gray-700 space-y-2"><li>Lavar com água e sabão.</li><li>Manter deitado e hidratado.</li><li>Chamar SAMU (192).</li></ul>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded border-l-4 border-red-500">
+                            <h3 class="font-bold text-red-800 text-lg mb-2">❌ O QUE NÃO FAZER</h3>
+                            <ul class="list-disc list-inside text-gray-700 space-y-2"><li>NÃO fazer torniquete.</li><li>NÃO furar/cortar.</li><li>NÃO chupar o veneno.</li></ul>
+                        </div>
+                    </div>
+                    <div class="text-center bg-gray-100 p-4 rounded mt-4">
+                        <p class="font-bold text-gray-800 text-lg">📞 Emergência Nacional: Ligue 192 (SAMU) ou 193 (Bombeiros)</p>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    modalAberto: false,
+                    modalEmergencia: false,
+                    mensagemSucesso: false,
+                    termoPesquisa: "",
+                    selecionada: null,
+                    form: { nome: "", email: "", local: "", relato: "" },
+                    indiceImagemAtual: 0,
+
+                    cobras: [
+                        // PEÇONHENTAS
+                        { id: 1, nome: "Jararaca", cientifico: "Bothrops jararaca", tipo: "peconhenta", habitat: "Mata Atlântica", risco: "Baixo", descricao: "A Jararaca é responsável pela maioria dos acidentes ofídicos no Brasil.", imagens: ["imagens/jararaca.jpg"] },
+                        { id: 2, nome: "Cascavel", cientifico: "Crotalus durissus", tipo: "peconhenta", habitat: "Cerrado", risco: "Baixo", descricao: "Famosa pelo seu chocalho.", imagens: ["imagens/cascavel.jpg"] },
+                        { id: 3, nome: "Surucucu-Pico-de-Jaca", cientifico: "Lachesis muta", tipo: "peconhenta", habitat: "Amazônia", risco: "Vulnerável", descricao: "Maior serpente peçonhenta das Américas.", imagens: ["imagens/surucucu.jpg"] },
+                        { id: 7, nome: "Coral-Verdadeira", cientifico: "Micrurus frontalis", tipo: "peconhenta", habitat: "Cerrado e Mata Atlântica", risco: "Baixo", descricao: "Possui anéis vermelhos, pretos e brancos. Veneno neurotóxico.", imagens: ["imagens/coral.jpg"] },
+                        { id: 8, nome: "Jararacuçu", cientifico: "Bothrops jararacussu", tipo: "peconhenta", habitat: "Mata Atlântica", risco: "Baixo", descricao: "Pode chegar a 2 metros. Quantidade enorme de veneno.", imagens: ["imagens/jararacucu.jpg"] },
+                        
+                        // NÃO PEÇONHENTAS
+                        { id: 4, nome: "Jiboia", cientifico: "Boa constrictor", tipo: "nao-peconhenta", habitat: "Florestas", risco: "Baixo", descricao: "Mata por asfixia. Muito dócil.", imagens: ["imagens/jiboia.jpg"] },
+                        { id: 5, nome: "Sucuri Verde", cientifico: "Eunectes murinus", tipo: "nao-peconhenta", habitat: "Rios", risco: "Baixo", descricao: "Uma das maiores cobras do mundo.", imagens: ["imagens/sucuri.jpg"] },
+                        { id: 6, nome: "Caninana", cientifico: "Spilotes pullatus", tipo: "nao-peconhenta", habitat: "América Central", risco: "Baixo", descricao: "Rápida e ágil. Não possui veneno.", imagens: ["imagens/caninana.jpg"] },
+                        { id: 9, nome: "Cobra-Papagaio", cientifico: "Corallus caninus", tipo: "nao-peconhenta", habitat: "Amazônia", risco: "Baixo", descricao: "Famosa pela cor verde esmeralda.", imagens: ["imagens/papagaio.jpg"] },
+                        { id: 10, nome: "Falsa-Coral", cientifico: "Erythrolamprus aesculapii", tipo: "nao-peconhenta", habitat: "Todo o Brasil", risco: "Baixo", descricao: "Imita as cores da Coral-Verdadeira (mimetismo).", imagens: ["imagens/falsacoral.jpg"] }
+                    ]
+                }
+            },
+            computed: {
+                peconhentas() { return this.cobras.filter(c => c.tipo === 'peconhenta' && c.nome.toLowerCase().includes(this.termoPesquisa.toLowerCase())); },
+                naoPeconhentas() { return this.cobras.filter(c => c.tipo === 'nao-peconhenta' && c.nome.toLowerCase().includes(this.termoPesquisa.toLowerCase())); }
+            },
+            methods: {
+                abrirModal(cobra) { this.selecionada = cobra; this.indiceImagemAtual = 0; this.modalAberto = true; },
+                fecharModal() { this.modalAberto = false; },
+                proximaImagem() {
+                    if (this.indiceImagemAtual < this.selecionada.imagens.length - 1) { this.indiceImagemAtual++; } 
+                    else { this.indiceImagemAtual = 0; }
+                },
+                imagemAnterior() {
+                    if (this.indiceImagemAtual > 0) { this.indiceImagemAtual--; } 
+                    else { this.indiceImagemAtual = this.selecionada.imagens.length - 1; }
+                },
+                enviarFormulario() {
+                    this.mensagemSucesso = true;
+                    setTimeout(() => { this.mensagemSucesso = false; this.form = { nome: "", email: "", local: "", relato: "" }; }, 3000);
+                },
+                rolarCarrossel(id, direcao) {
+                    const container = document.getElementById(id);
+                    const quantidadeScroll = 350; 
+                    if (direcao === 'direita') {
+                        container.scrollBy({ left: quantidadeScroll, behavior: 'smooth' });
+                    } else {
+                        container.scrollBy({ left: -quantidadeScroll, behavior: 'smooth' });
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
